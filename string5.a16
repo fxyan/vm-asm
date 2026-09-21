@@ -1,0 +1,208 @@
+
+jump @1024
+
+; 1024是保留内存地址用来存储数据
+.memory 1024
+set2 f1 3
+jump @__main
+
+@__main
+    .var-string s1 "axe!"
+    ;调用函数
+    .call draw_string &s1 0 0
+@__main_end
+halt
+
+;调用函数
+; 获取地址
+.function draw_string:0 s:2 x:1 y:1
+    ;s是地址 地址是f1的值吧
+    ;这句 .return_value c 的作用就是把 a1 寄存器的值写入到变量 c
+    ; s地址中的值
+    .var2 a
+    ; 每次s值+1
+    .var add_a 1
+    ; 因为每个encoding是四个字节所以+4
+    .var add_x 4
+    ; 判断字符串结果是不是最后为0
+    .var compare_str 0
+
+    ;首先我们吧s的内存地址存储到a1中
+    set2 a3 9
+    subtract2 f1 a3 a3
+    load_from_register2 a3 a1
+    ;然后找到对应的内存地址的数据存到a中
+    load_from_register a1 a1
+    .return_value a
+
+    ;我们需要一个while循环来处理 如果值是0 那么直接halt
+    ;先需要一个变量存储对应的值 然后每次+1地址来继续获取变量过来处理
+    .while compare_str < a {
+        ;调用函数画字符
+        .call draw_char a x y
+
+        ; 这里增加字符串地址的位置和 x的位置
+        .add2 s add_a s
+        .add2 x add_x x
+
+        ;把增加过的s的内存地址存储到a1中
+        set2 a3 9
+        subtract2 f1 a3 a3
+        load_from_register2 a3 a1
+        ;然后找到对应的内存地址的数据存到a中
+        load_from_register a1 a1
+        .return_value a
+    }
+    .return
+
+
+;调用函数
+.function draw_char:2 a:2 x:1 y:1
+        ; 这个 dummy 是内存地址中存储编码的基础地址
+        .var2 dummy 65020
+        ; x_add 每次x+1
+        .var x_add 1
+        ; a每次乘的值
+        .var a_mui 4
+
+        ; sum 存储的开画的第一行
+        .var2 sum
+        .var column
+
+        ; b 是 1 字节所以只能读取 1 字节
+        .multiply2 a a_mui a
+        .add2 a dummy sum
+        ;画第一行
+        ;把sum地址拿到a1
+        set2 a3 3
+        subtract2 f1 a3 a3
+        load_from_register2 a3 a1
+        ;把sum地址数据存到a3
+        load_from_register a1 a2
+        set2 a3 1
+        subtract2 f1 a3 a3
+        save_from_register2 a2 a3
+        .call draw_column x y column
+        ;画第二行
+        .add2 sum x_add sum
+        .add2 x_add x x
+        ;取出 sum到a1
+        set2 a3 3
+        subtract2 f1 a3 a3
+        load_from_register2 a3 a1
+        ;把sum地址数据存到a3
+        load_from_register a1 a2
+        set2 a3 1
+        subtract2 f1 a3 a3
+        save_from_register2 a2 a3
+        .call draw_column x y column
+
+        ;画第三行
+        .add2 sum x_add sum
+        .add2 x_add x x
+        ;取出 sum到a1
+        set2 a3 3
+        subtract2 f1 a3 a3
+        load_from_register2 a3 a1
+        ;把sum地址数据存到a3
+        load_from_register a1 a2
+        set2 a3 1
+        subtract2 f1 a3 a3
+        save_from_register2 a2 a3
+        .call draw_column x y column
+
+        ;画第四行
+        .add2 sum x_add sum
+        .add2 x_add x x
+        ;取出 sum到a1
+        set2 a3 3
+        subtract2 f1 a3 a3
+        load_from_register2 a3 a1
+        ;把sum地址数据存到a3
+        load_from_register a1 a2
+        set2 a3 1
+        subtract2 f1 a3 a3
+        save_from_register2 a2 a3
+        .call draw_column x y column
+
+        ; 返回值
+        .return sum
+    ; 用下面的方式标志函数结束
+.function_end
+
+
+
+; 画图
+.function draw_column:2 x:1 y:1 column:1
+    ; 取出x a1
+    ; 取出y a2
+    ; 取出column
+    ;.var x
+    ;.var y
+    ;.var column
+
+    ; 先获取column 放到a1
+    ;set2 a3 1
+    ;subtract2 f1 a3 a3
+    ;load_from_register a3 a2
+    set2 a3 1
+    subtract2 f1 a3 a3
+    load_from_register a3 a1
+
+    ;需要一个while循环 判断column是不是大于0 大于0进行循环 否则跳出循环
+    @while_start
+        set2 a3 1
+        compare a1 a3
+        jump_if_less @while_end
+
+        ;做判断看看末尾是不是0
+        set2 a3 1
+        and a1 a3 a3
+
+        ;如果是0的话那么不调用画点函数
+        set2 a2 1
+        compare a3 a2
+        jump_if_less @if_end
+            ;取 y
+            set2 a3 2
+            subtract2 f1 a3 a3
+            load_from_register a3 a3
+            ; 设置a2 为100
+            set2 a2 100
+
+            ; 计算乘法 因为y * 100 + 30000 + x的值才是坐标
+            multiply2 a2 a3 a2
+            set2 a3 30000
+            add2 a2 a3 a2
+
+            ; 获取x
+            set2 a3 3
+            subtract2 f1 a3 a3
+            load_from_register a3 a3
+
+            ; x + y
+            add2 a2 a3 a3
+
+            ; 将对应的内存写为红色
+            set2 a2 11000011
+            save_from_register a2 a3
+
+        ; 给column 移位
+        @if_end
+        set2 a3 1
+        shift_right a1 a3 a1
+        ;给y+1
+        set2 a3 2
+        subtract2 f1 a3 a3
+        load_from_register2 a3 a3
+        set2 a2 1
+        add2 a3 a2 a2
+        set2 a3 2
+        subtract2 f1 a3 a3
+        save_from_register2 a2 a3
+
+        jump @while_start
+    @while_end
+
+    .return 3
+@function_draw_column_end
